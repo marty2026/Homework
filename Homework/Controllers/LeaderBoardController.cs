@@ -8,6 +8,11 @@ namespace Homework.Controllers
     [ApiController]
     public class LeaderBoardController : ControllerBase
     {
+        // Using SortedSet to maintain order based on score and id
+        // SortedSet allows for efficient insertion and removal (O(log n)) while maintaining order.
+        // Although the search is O(n),which is not as good as SortedList, SortedSet is still better because insertion and removal are frequent operations in this case.
+        // Dictionary is used for quick access to customers by id
+        // The comparer sorts by score descending, then by id ascending
         private static readonly SortedSet<Customer> sortedCustomers =
             new (Comparer<Customer>.Create((x, y) =>
             { if (y.Score.CompareTo(x.Score) == 0) 
@@ -19,7 +24,7 @@ namespace Homework.Controllers
         [Route("/customer/{customerid}/score/{score}")]
         public ActionResult<int> CreateCustomer(long customerid, [Range(-1000, 1000)] decimal score)
         {
-            if (!customerMap.TryGetValue(customerid, out Customer? current)) // Use nullable type for 'current'
+            if (!customerMap.TryGetValue(customerid, out Customer? current))
             {
                 Customer newCustomer = new (customerid, score);
                 sortedCustomers.Add(newCustomer);
@@ -61,9 +66,13 @@ namespace Homework.Controllers
         [Route("/leaderboard/{customerid}")]
         public ActionResult<IEnumerable<Customer>> Details(long customerid,int high,int low)
         {
+            if(!customerMap.ContainsKey(customerid))
+            {
+                return NotFound("Customer not found.");
+            }
             int range = high;
-            Customer customer = customerMap[customerid];
-            Queue<Customer> queue = new ();
+            Queue<Customer> queue = new();
+
             SortedSet<Customer>.Enumerator en = sortedCustomers.GetEnumerator();
             bool foundCustomer = false;
             int rank = 0;
